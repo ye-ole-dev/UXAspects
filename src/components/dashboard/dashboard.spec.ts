@@ -99,7 +99,7 @@ describe('Dashboard', () => {
     });
 
     it('should switch to stacked mode when minWidth increased', async() => {
-        // setup columns option so row one has widgetA and Row two has widgetB/C
+        // setup columns option so row one has widgetA and row two has widgetB/C
         const columnsSetup = { ...component.options, columns: 4 };
 
         component.options = columnsSetup;
@@ -115,6 +115,7 @@ describe('Dashboard', () => {
         await fixture.whenStable();
 
         expect(widgetC.style.left).toBe('0px');
+        expect(widgetC.style.height).toBe('100px')
     });
 
 });
