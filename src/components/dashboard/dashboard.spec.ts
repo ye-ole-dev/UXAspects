@@ -115,7 +115,7 @@ describe('Dashboard', () => {
         await fixture.whenStable();
 
         expect(widgetC.style.left).toBe('0px');
-        expect(widgetC.style.height).toBe('100px')
+        expect(widgetC.style.height).toBe('100px');
     });
 
 });
