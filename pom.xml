@@ -47,6 +47,7 @@
                     <environmentVariables>
                         <RE_BUILD_TYPE>${RE_BUILD_TYPE}</RE_BUILD_TYPE>
                         <VERSION>${project.version}</VERSION>
+                        <VERSION_PRERELEASE>treegrid-performance.1</VERSION_PRERELEASE>
                     </environmentVariables>
                 </configuration>
                 <executions>
