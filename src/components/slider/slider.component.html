@@ -9,6 +9,23 @@
 
     <!-- Lower Thumb Button / Line -->
     <div class="thumb lower"
+        *ngIf="disabled"
+        role="slider"
+        tabindex="0"
+        #lowerthumb
+        [style.left.%]="thumbs.lower.position"
+        [style.cursor]="'default'"
+        [class.active]="thumbs.lower.drag"
+        [style.z-index]="thumbs.lower.order"
+        [class.button]="_options.handles.style === sliderStyle.Button"
+        [class.line]="_options.handles.style === sliderStyle.Line"
+        [class.narrow]="_options.track.height === sliderSize.Narrow"
+        [class.wide]="_options.track.height === sliderSize.Wide"
+    >
+        <ng-container *ngTemplateOutlet="lowerThumbCallout"></ng-container>
+    </div>
+    <div class="thumb lower"
+        *ngIf="!disabled"
         uxDrag
         uxFocusIndicator
         role="slider"
@@ -42,23 +59,9 @@
         (keydown.PageDown)="snapToNearestTick(sliderThumb.Lower, sliderSnap.Major, false); $event.preventDefault()"
         (keydown.PageUp)="snapToNearestTick(sliderThumb.Lower, sliderSnap.Major, true); $event.preventDefault()"
         (keydown.Home)="snapToEnd(sliderThumb.Lower, false); $event.preventDefault()"
-        (keydown.End)="snapToEnd(sliderThumb.Lower, true); $event.preventDefault()">
-
-        <!-- Lower Thumb Callout -->
-        <div class="tooltip top tooltip-lower" #lowerTooltip
-            [class.tooltip-dynamic]="_options.handles.callout.trigger === sliderCalloutTrigger.Dynamic &&
-             thumbs.lower.drag === false"
-            [style.opacity]="tooltips.lower.visible ? 1 : 0"
-            [style.left.px]="tooltips.lower.position">
-
-            <div class="tooltip-arrow" [style.border-top-color]="_options.handles.callout.background"></div>
-
-            <div class="tooltip-inner"
-                [style.background-color]="_options.handles.callout.background"
-                [style.color]="_options.handles.callout.color">
-                {{ tooltips.lower.label }}
-            </div>
-        </div>
+        (keydown.End)="snapToEnd(sliderThumb.Lower, true); $event.preventDefault()"
+        >
+        <ng-container *ngTemplateOutlet="lowerThumbCallout"></ng-container>
 
     </div>
 
@@ -69,6 +72,22 @@
 
     <!-- Upper Thumb Button / Line -->
     <div class="thumb upper"
+        *ngIf="disabled"
+        role="slider"
+        #upperthumb
+        [class.active]="thumbs.upper.drag"
+        [style.left.%]="thumbs.upper.position"
+        [style.left.%]="thumbs.upper.position"
+        [style.z-index]="thumbs.upper.order"
+        [style.cursor]="'default'"
+        [class.button]="_options.handles.style === sliderStyle.Button"
+        [class.line]="_options.handles.style === sliderStyle.Line"
+        [class.narrow]="_options.track.height === sliderSize.Narrow"
+        [class.wide]="_options.track.height === sliderSize.Wide">
+        <ng-container *ngTemplateOutlet="upperThumbCallout"></ng-container>
+    </div>
+    <div class="thumb upper"
+        *ngIf="!disabled"
         uxDrag
         uxFocusIndicator
         role="slider"
@@ -103,22 +122,7 @@
         (keydown.Home)="snapToEnd(sliderThumb.Upper, false); $event.preventDefault()"
         (keydown.End)="snapToEnd(sliderThumb.Upper, true); $event.preventDefault()">
 
-        <!-- Upper Thumb Callout -->
-        <div class="tooltip top tooltip-upper" #upperTooltip
-            [class.tooltip-dynamic]="_options.handles.callout.trigger === sliderCalloutTrigger.Dynamic &&
-             thumbs.upper.drag === false"
-            [style.opacity]="tooltips.upper.visible ? 1 : 0"
-            [style.left.px]="tooltips.upper.position">
-
-            <div class="tooltip-arrow" [style.border-top-color]="_options.handles.callout.background"></div>
-
-            <div class="tooltip-inner"
-                *ngIf="_options.type === sliderType.Range"
-                [style.background-color]="_options.handles.callout.background"
-                [style.color]="_options.handles.callout.color">
-                {{ tooltips.upper.label }}
-            </div>
-        </div>
+        <ng-container *ngTemplateOutlet="upperThumbCallout"></ng-container>
     </div>
 
     <!-- Section of Track Abover Upper Thumb -->
@@ -144,3 +148,40 @@
         <div class="tick-label" aria-hidden="true" [hidden]="!tick.showLabels">{{ tick.label }}</div>
     </div>
 </div>
+
+<ng-template #lowerThumbCallout>
+    <!-- Lower Thumb Callout -->
+    <div class="tooltip top tooltip-lower" #lowerTooltip
+    [class.tooltip-dynamic]="_options.handles.callout.trigger === sliderCalloutTrigger.Dynamic &&
+     thumbs.lower.drag === false"
+    [style.opacity]="tooltips.lower.visible ? 1 : 0"
+    [style.left.px]="tooltips.lower.position">
+
+        <div class="tooltip-arrow" [style.border-top-color]="_options.handles.callout.background"></div>
+
+        <div class="tooltip-inner"
+            [style.background-color]="_options.handles.callout.background"
+            [style.color]="_options.handles.callout.color">
+            {{ tooltips.lower.label }}
+        </div>
+    </div>
+
+</ng-template>
+<ng-template #upperThumbCallout>
+    <!-- Upper Thumb Callout -->
+    <div class="tooltip top tooltip-upper" #upperTooltip
+        [class.tooltip-dynamic]="_options.handles.callout.trigger === sliderCalloutTrigger.Dynamic &&
+        thumbs.upper.drag === false"
+        [style.opacity]="tooltips.upper.visible ? 1 : 0"
+        [style.left.px]="tooltips.upper.position">
+
+        <div class="tooltip-arrow" [style.border-top-color]="_options.handles.callout.background"></div>
+
+        <div class="tooltip-inner"
+            *ngIf="_options.type === sliderType.Range"
+            [style.background-color]="_options.handles.callout.background"
+            [style.color]="_options.handles.callout.color">
+            {{ tooltips.upper.label }}
+        </div>
+    </div>
+</ng-template>

@@ -17,6 +17,9 @@ export class SliderComponent implements OnInit, AfterViewInit, DoCheck {
         this.updateOptions();
     }
 
+    /** whether the slider is disabled or not. */
+    @Input() disabled: boolean = false;
+
     get options(): SliderOptions {
         return this._options;
     }
