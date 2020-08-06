@@ -90,7 +90,7 @@
     "@types/prismjs": "1.6.5",
     "@types/semver": "5.5.0",
     "@types/webpack-env": "1.13.2",
-    "@ux-aspects/ux-aspects-scripts": "git+https://github.com/UXAspects/UXAspects-Scripts.git",
+    "@ux-aspects/ux-aspects-scripts": "^2.5.0",
     "angular2-template-loader": "0.6.2",
     "awesome-typescript-loader": "5.2.1",
     "babel-loader": "^8.1.0",
