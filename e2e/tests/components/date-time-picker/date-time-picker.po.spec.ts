@@ -10,6 +10,7 @@ export class DateTimePickerPage {
     selectedDate = $('.date-button.active');
     todayBtn = $('.now-button');
     currentDate = $('#current-date');
+    nextDate = $('.header-navigation-next-icon');
 
     changeWeekStartBtn = $('#change-start-of-week');
     setMinAndMaxBtn = $('#set-limits');
@@ -67,6 +68,15 @@ export class DateTimePickerPage {
             if (item === text) {
                 return date;
             }
+        }
+    }
+
+    async attemptClick(item: ElementFinder): Promise<boolean> {
+        try {
+            await item.click();
+            return true;
+        } catch {
+            return false;
         }
     }
 }

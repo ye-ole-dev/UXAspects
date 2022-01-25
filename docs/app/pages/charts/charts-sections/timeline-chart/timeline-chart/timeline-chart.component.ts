@@ -6,6 +6,12 @@ import { IPlayground } from '../../../../../interfaces/IPlayground';
 import { IPlaygroundProvider } from '../../../../../interfaces/IPlaygroundProvider';
 import { TimelineChartService } from './timeline-chart.service';
 
+const DATE_LOCALE_OPTIONS = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+} as const;
+
 @Component({
     selector: 'uxd-charts-timeline-chart',
     templateUrl: './timeline-chart.component.html',
@@ -31,6 +37,9 @@ export class ChartsTimelineChartComponent extends BaseDocumentationSection imple
         scales: {
             xAxes: [
                 {
+                    ticks: {
+                        fontSize: 12,
+                    },
                     type: 'time',
                     gridLines: {
                         display: false
@@ -46,7 +55,8 @@ export class ChartsTimelineChartComponent extends BaseDocumentationSection imple
                         beginAtZero: true,
                         max: 1000,
                         stepSize: 250,
-                        padding: 8
+                        padding: 8,
+                        fontSize: 12,
                     },
                     gridLines: {
                         tickMarkLength: 8
@@ -89,7 +99,10 @@ export class ChartsTimelineChartComponent extends BaseDocumentationSection imple
                     time: {
                         unit: 'month',
                         stepSize: 6
-                    }
+                    },
+                    ticks: {
+                        fontSize: 12,
+                    },
                 }
             ],
             yAxes: [
@@ -99,6 +112,16 @@ export class ChartsTimelineChartComponent extends BaseDocumentationSection imple
             ]
         },
         timeline: {
+            handles: {
+                tooltip: {
+                    label: () => {
+                        const data = this.lineChartData;
+                        const rangeLower = (<Date>data[0].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const rangeUpper = (<Date>data[data.length - 1].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        return {rangeLower, rangeUpper};
+                    }
+                } as any
+            },
             selectionColor: this._colorService.getColor('alternate3').setAlpha(0.15).toRgba(),
             onChange: (min: Date, max: Date) => {
                 this.lineChartData = this._dataService.getDataset().filter(point => {
@@ -111,9 +134,19 @@ export class ChartsTimelineChartComponent extends BaseDocumentationSection imple
                 upper: this.lineChartData[this.lineChartData.length - 1].x as Date,
                 minimum: 8_640_000_000, // 100 days
                 maximum: 110_595_600_000, // 3.5 years
+                tooltip: {
+                    label: () => {
+                        const data = this.lineChartData;
+                        const rangeLower = (<Date>data[0].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const rangeUpper = (<Date>data[data.length - 1].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const label = `${rangeLower} - ${rangeUpper}`;
+                        return label;
+                    }
+                } as any
             }
         }
     };
+
 
     playground: IPlayground = {
         files: {

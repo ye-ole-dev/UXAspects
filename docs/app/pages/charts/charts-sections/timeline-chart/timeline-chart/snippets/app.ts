@@ -2,6 +2,12 @@ import { Component } from '@angular/core';
 import { ColorService, TimelineChartOptions } from '@ux-aspects/ux-aspects';
 import { TimelineChartService } from './timeline-chart.service';
 
+const DATE_LOCALE_OPTIONS = {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+} as const;
+
 @Component({
     selector: 'app',
     templateUrl: './app.component.html',
@@ -26,6 +32,9 @@ export class AppComponent {
         scales: {
             xAxes: [
                 {
+                    ticks: {
+                        fontSize: 12,
+                    },
                     type: 'time',
                     gridLines: {
                         display: false
@@ -41,7 +50,8 @@ export class AppComponent {
                         beginAtZero: true,
                         max: 1000,
                         stepSize: 250,
-                        padding: 8
+                        padding: 8,
+                        fontSize: 12,
                     },
                     gridLines: {
                         tickMarkLength: 8
@@ -84,7 +94,10 @@ export class AppComponent {
                     time: {
                         unit: 'month',
                         stepSize: 6
-                    }
+                    },
+                    ticks: {
+                        fontSize: 12,
+                    },
                 }
             ],
             yAxes: [
@@ -94,6 +107,16 @@ export class AppComponent {
             ]
         },
         timeline: {
+            handles: {
+                tooltip: {
+                    label: () => {
+                        const data = this.lineChartData;
+                        const rangeLower = (<Date>data[0].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const rangeUpper = (<Date>data[data.length - 1].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        return {rangeLower, rangeUpper};
+                    }
+                } as any
+            },
             selectionColor: this._colorService.getColor('alternate3').setAlpha(0.15).toRgba(),
             onChange: (min: Date, max: Date) => {
                 this.lineChartData = this._dataService.getDataset().filter(point => {
@@ -106,6 +129,16 @@ export class AppComponent {
                 upper: this.lineChartData[this.lineChartData.length - 1].x as Date,
                 minimum: 8_640_000_000, // 100 days
                 maximum: 110_595_600_000, // 3.5 years
+                tooltip: {
+                    label: () => {
+                        const data = this.lineChartData;
+                        const rangeLower = (<Date>data[0].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const rangeUpper = (<Date>data[data.length - 1].x).toLocaleDateString([], DATE_LOCALE_OPTIONS);
+                        const label = `${rangeLower} - ${rangeUpper}`;
+
+                        return label;
+                    }
+                } as any
             }
         }
     };

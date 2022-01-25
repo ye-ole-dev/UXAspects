@@ -1,22 +1,30 @@
-import { async, ComponentFixture, TestBed } from '@angular/core/testing';
+import { async, ComponentFixture, fakeAsync, TestBed, tick } from '@angular/core/testing';
 import { InfiniteScrollModule } from './infinite-scroll.module';
-import { Component } from '@angular/core';
+import { Component, ViewChild } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { InfiniteScrollDirective } from './infinite-scroll.directive';
 
 @Component({
     template: `<div [uxInfiniteScroll]="load"
                     [filter]="filterText"
                     [pageSize]="20"
-                    [loadOnScroll]="false">
+                    [loadOnScroll]="loadOnScroll">
                 </div>
     `
 })
 export class InfiniteScrollTestComponent {
 
     filterText: any;
+    loadOnScroll: boolean = false;
+
+    @ViewChild(InfiniteScrollDirective) infiniteScrollDirective: InfiniteScrollDirective;
 
     load(pageNum: number, pageSize: number, filter: any): any[] {
-        return [];
+        const items: string[] = [];
+        for (let idx = pageNum * 20; idx < (pageNum + 1) * 20; idx++) {
+            items.push(`Item ${idx}`);
+        }
+        return items;
     }
 
 }
@@ -41,8 +49,7 @@ describe('Directive - Infinite Scroll', () => {
         fixture.detectChanges();
     });
 
-    it ('should initially call load with filter value of "" if filter input value is undefined', async() => {
-
+    it ('should initially call load with filter value of "" if filter input value is undefined', () => {
         expect(loadSpy).toHaveBeenCalledWith(0, 20, '');
         expect(loadSpy).toHaveBeenCalledTimes(1);
     });
@@ -101,4 +108,28 @@ describe('Directive - Infinite Scroll', () => {
         expect(loadSpy).toHaveBeenCalledWith(0, 20, { name: 'somebody' });
         expect(loadSpy).toHaveBeenCalledTimes(2);
     });
+
+    // Test Case for https://portal.digitalsafe.net/browse/EL-4093
+    it('should not attempt to load a subsequent page if the element is invisible', fakeAsync(async () => {
+
+        // hide the component so it has a height of 0 but is still within the DOM
+        const nativeElement = fixture.nativeElement as HTMLElement;
+        nativeElement.style.display = 'none';
+
+        component.loadOnScroll = true;
+        component.filterText = { name: 'somebody' };
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        loadSpy.calls.reset();
+
+        // we trigger a `check` which will attempt to load a page however this should never result
+        // in a call to the `load` function as the typeahead is not visible
+        component.infiniteScrollDirective.check();
+
+        // load requests are debounced by 200ms
+        tick(200);
+
+        expect(loadSpy).not.toHaveBeenCalled();
+    }));
 });

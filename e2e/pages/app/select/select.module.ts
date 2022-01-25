@@ -1,8 +1,9 @@
 import { CommonModule } from '@angular/common';
 import { NgModule } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { AccessibilityModule, AccordionModule, CheckboxModule, IconModule, NumberPickerModule, RadioButtonModule, ResizeModule, SelectModule } from '@ux-aspects/ux-aspects';
+import { SelectCustomHeadingTestPageComponent } from './custom-heading/select-custom-heading.testpage.component';
 import { SelectFormsTestPageComponent } from './forms/select-forms.testpage.component';
 import { SelectTestPageComponent } from './standard/select.testpage.component';
 
@@ -18,6 +19,7 @@ import { SelectTestPageComponent } from './standard/select.testpage.component';
         FormsModule,
         IconModule,
         ResizeModule,
+        ReactiveFormsModule,
         RouterModule.forChild([
             {
                 path: '',
@@ -26,12 +28,18 @@ import { SelectTestPageComponent } from './standard/select.testpage.component';
             {
                 path: 'forms',
                 component: SelectFormsTestPageComponent
+            },
+            {
+                path: 'custom-heading',
+                component: SelectCustomHeadingTestPageComponent
             }
         ])
     ],
     declarations: [
         SelectTestPageComponent,
-        SelectFormsTestPageComponent
+        SelectFormsTestPageComponent,
+        SelectCustomHeadingTestPageComponent
     ]
 })
+
 export class SelectTestPageModule { }

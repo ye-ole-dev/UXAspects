@@ -1,7 +1,7 @@
 import { ChangeDetectorRef, Component, ContentChildren, ElementRef, EventEmitter, Input, OnDestroy, Output, QueryList, TemplateRef } from '@angular/core';
 import { takeUntil } from 'rxjs/operators';
 import { ResizeDimensions, ResizeService } from '../../directives/resize/index';
-import { WizardComponent, WizardService } from '../wizard/index';
+import { WizardComponent, WizardService, WizardStepComponent } from '../wizard/index';
 import { MarqueeWizardStepComponent } from './marquee-wizard-step.component';
 
 @Component({
@@ -10,15 +10,15 @@ import { MarqueeWizardStepComponent } from './marquee-wizard-step.component';
     providers: [WizardService],
     preserveWhitespaces: false
 })
-export class MarqueeWizardComponent extends WizardComponent implements OnDestroy {
+export class MarqueeWizardComponent<TStepContext = any> extends WizardComponent implements OnDestroy {
 
     /** Provide a custom template for the description in the left panel */
-    @Input() description: string | TemplateRef<any>;
+    @Input() description: string | TemplateRef<void>;
 
     /** Provide a custom template for the step in the left panel */
-    @Input() stepTemplate: TemplateRef<any>;
+    @Input() stepTemplate: TemplateRef<MarqueeWizardStepContext<TStepContext>>;
 
-    /** Initial set to default width to match 240px on left but can be changed with a perecentage value */
+    /** Initial set to default width to match 240px on left but can be changed with a percentage value */
     @Input() sidePanelWidth: number = 25;
 
     /** Width of the splitter - default is 10 */
@@ -70,7 +70,6 @@ export class MarqueeWizardComponent extends WizardComponent implements OnDestroy
      * complete and go to the next step
      */
     async next(): Promise<void> {
-
         // get the current step
         const step = this.getCurrentStep() as MarqueeWizardStepComponent;
 
@@ -112,8 +111,19 @@ export class MarqueeWizardComponent extends WizardComponent implements OnDestroy
     /** Whenever the drag event ends, update the internal value and emit the new size */
     onDragEnd({ sizes }: SplitDragEndEvent): void {
         // we need to only get the size of the first panel which will be the side panel
-        this.sidePanelWidth = sizes[0];
+        this.sidePanelWidth = sizes[0] as number;
         this.sidePanelWidthChange.emit(this.sidePanelWidth);
+    }
+
+    gotoStep(step: WizardStepComponent): void {
+        const currentStep = this.getCurrentStep() as MarqueeWizardStepComponent;
+
+        if (currentStep !== step) {
+            if (!this.sequential) {
+                currentStep.setCompleted(true);
+            }
+            super.gotoStep(step);
+        }
     }
 
     protected setFutureStepsUnvisited(currentStep: MarqueeWizardStepComponent): void {
@@ -128,5 +138,11 @@ export class MarqueeWizardComponent extends WizardComponent implements OnDestroy
 /** Angular Split does not export a type for this so we created our own */
 interface SplitDragEndEvent {
     gutterNum: number;
-    sizes: number[];
+    sizes: (number | '*')[];
+}
+
+export interface MarqueeWizardStepContext<T> {
+    $implicit: MarqueeWizardStepComponent<T>;
+    index: number;
+    context: T;
 }

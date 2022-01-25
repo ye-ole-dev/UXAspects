@@ -1,11 +1,11 @@
 import { OverlayContainer } from '@angular/cdk/overlay';
 import { ChangeDetectionStrategy, Component, SimpleChange } from '@angular/core';
 import { async, ComponentFixture, inject, TestBed } from '@angular/core/testing';
+import { FormsModule } from '@angular/forms';
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { RadioButtonModule } from '../radiobutton/radiobutton.module';
 import { InputDropdownComponent } from './input-dropdown.component';
 import { InputDropdownModule } from './input-dropdown.module';
-import { FormsModule } from '@angular/forms';
 
 describe('InputDropdownComponent', () => {
     let component: InputDropdownComponent<any>;
@@ -99,15 +99,19 @@ describe('InputDropdownComponent', () => {
     selector: 'app-dropdown-test',
     template: `
         <ux-input-dropdown
+            [allowNull]="allowNull"
             [(dropdownOpen)]="dropdownOpen"
+            [disabled]="disabled"
+            (selectedChange)="onSelectedChange($event)"
+            [(selected)]="selected"
             (dropdownOpenChange)="onOpenChange($event)">
 
             <ng-template #displayContent>
-                <b>Selection:</b> {{ selected ? selected : '(none)' }}
+                <span class="selection"><b>Selection:</b> {{ selected ? selected : '(none)' }}</span>
             </ng-template>
 
             <div class="radio-button-container" uxTabbableList uxRadioButtonGroup [(ngModel)]="selected">
-                <ux-radio-button uxTabbableListItem *ngFor="let option of options">
+                <ux-radio-button uxTabbableListItem *ngFor="let option of options" [option]="option">
                     {{ option }}
                 </ux-radio-button>
             </div>
@@ -116,9 +120,13 @@ describe('InputDropdownComponent', () => {
 })
 export class InputDropdownTestComponent {
 
+    disabled: boolean = false;
     dropdownOpen: boolean = false;
+    allowNull: boolean = false;
     options: string[] = ['One', 'Two', 'Three'];
     selected: string = null;
+
+    onSelectedChange(event: any): void { }
 
     onOpenChange(isOpen: boolean): void {
     }
@@ -188,8 +196,32 @@ describe('InputDropdownComponent', () => {
         expect(openChangeSpy).not.toHaveBeenCalled();
     });
 
+    it('should not focus the input field when dropdownOpen is programmatically set to true', async () => {
+        component.dropdownOpen = true;
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const input = document.querySelector<HTMLInputElement>('input.form-control');
+
+        expect(document.activeElement).not.toBe(input);
+    });
+
+    it('should focus the input field when dropdownOpen is opened with a click', async () => {
+        const trigger = document.querySelector('button.form-control') as HTMLButtonElement;
+
+        trigger.click();
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const input = document.querySelector<HTMLInputElement>('input.form-control');
+
+        expect(document.activeElement).toBe(input);
+    });
+
     it('dropdownOpenChange should emit when the dropdown is toggled non-programmatically', async () => {
-        let trigger = nativeElement.querySelector('button.form-control') as HTMLButtonElement;
+        const trigger = nativeElement.querySelector('button.form-control') as HTMLButtonElement;
         trigger.click();
 
         fixture.detectChanges();
@@ -205,5 +237,94 @@ describe('InputDropdownComponent', () => {
 
         expect(openChangeSpy).toHaveBeenCalledTimes(2);
         expect(openChangeSpy).toHaveBeenCalledWith(false);
+    });
+
+    it('should not open the dropdown when disabled is true', async () => {
+        const trigger = nativeElement.querySelector('button.form-control') as HTMLButtonElement;
+        component.disabled = true;
+
+        trigger.click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const filterContainer = nativeElement.querySelector('.filter-container');
+        expect(filterContainer).toBeNull();
+    });
+
+    it('should not retain focus on the button when disabled is true.', async () => {
+        const trigger = nativeElement.querySelector('button.form-control') as HTMLButtonElement;
+        component.disabled = true;
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // open menu
+        trigger.click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const button = document.querySelector<HTMLInputElement>('button.form-control');
+
+        expect(document.activeElement).not.toBe(button);
+    });
+
+    it('dropdownOpenChange should not emit when the button has been disabled', async () => {
+        const trigger = nativeElement.querySelector('.ux-select-icon') as HTMLButtonElement;
+        component.disabled = true;
+
+        fixture.detectChanges();
+
+        trigger.click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(openChangeSpy).not.toHaveBeenCalled();
+    });
+
+    describe('with allowNull = true', () => {
+        beforeEach(() => {
+            component.allowNull = true;
+            component.dropdownOpen = true;
+            component.selected = 'One';
+            fixture.detectChanges();
+        });
+
+        it('should set the selected display value to "(none)" when the clear button is clicked', async () => {
+            const clearButton = nativeElement.querySelector('.ux-select-icon.ux-select-clear-icon') as HTMLButtonElement;
+            clearButton.click();
+
+            fixture.detectChanges();
+            await fixture.whenStable();
+
+            const title = nativeElement.querySelector<HTMLElement>('.selection');
+            expect(title.innerText).toBe('Selection: (none)');
+        });
+
+        it('should emit selectedChange when the value has been cleared', async () => {
+            spyOn(component, 'onSelectedChange');
+
+            const clearButton = nativeElement.querySelector('.ux-select-icon.ux-select-clear-icon') as HTMLButtonElement;
+            clearButton.click();
+
+            fixture.detectChanges();
+            await fixture.whenStable();
+
+            expect(component.onSelectedChange).toHaveBeenCalledWith(undefined);
+        });
+
+        it('should not clear the value when disabled is true', async () => {
+            component.disabled = true;
+            fixture.detectChanges();
+
+            const clearButton = nativeElement.querySelector('.ux-select-icon.ux-select-clear-icon') as HTMLButtonElement;
+            clearButton.click();
+
+            fixture.detectChanges();
+            await fixture.whenStable();
+
+            const title = nativeElement.querySelector<HTMLElement>('.selection');
+            expect(title.innerText).toBe('Selection: One');
+        });
+
     });
 });

@@ -1,3 +1,4 @@
+import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
 import { BACKSPACE, DELETE, ENTER, LEFT_ARROW, RIGHT_ARROW, SPACE } from '@angular/cdk/keycodes';
 import { DOCUMENT } from '@angular/common';
 import { AfterContentInit, ChangeDetectionStrategy, ChangeDetectorRef, Component, ContentChildren, ElementRef, EventEmitter, forwardRef, HostBinding, HostListener, Inject, Input, OnChanges, OnDestroy, Output, QueryList, SimpleChanges, TemplateRef, ViewChild } from '@angular/core';
@@ -63,7 +64,7 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
      * the option object as an argument, and should return the appropriate display value.
      * If the name of a property is provided as a string, that property is used as the display value.
      */
-    @Input() display: (option: T) => string | string;
+    @Input() display: TagInputDisplayFunction<T> | string;
 
     /** Controls whether pasting text into the text input area automatically converts that text into one or more tags. */
     @Input() addOnPaste: boolean = true;
@@ -73,6 +74,9 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
 
     /** Controls the disabled state of the tag input. */
     @Input() disabled: boolean = false;
+
+    /** Specified if this is a required input. */
+    @Input() required: boolean;
 
     /**
      * If set to `true`, the tag input will prevent addition and removal of tags to enforce the minTags and maxTags settings.
@@ -126,7 +130,7 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
      * - `index: number` - the zero-based index of the tag as it appears in the tag input.
      * - `api: TagApi` - provides the functions getTagDisplay, removeTagAt and canRemoveTagAt.
      */
-    @Input() tagTemplate: TemplateRef<any>;
+    @Input() tagTemplate: TemplateRef<TagTemplateContext<T>>;
 
     /**
      * A function which returns either a string, string[], or Set<string>, compatible with the NgClass directive. The function receives the following parameters:
@@ -163,6 +167,15 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
     /** Determine an aria label for the clear button */
     @Input() clearButtonAriaLabel: string = 'Reset selection';
 
+    /** Determine if the dropdown panel should close on external click.*/
+    @Input() set autoCloseDropdown(value: boolean) {
+        this._autoCloseDropdown = coerceBooleanProperty(value);
+    }
+
+    get autoCloseDropdown(): boolean {
+        return this._autoCloseDropdown;
+    }
+
     /** Emits when tags is changed. */
     @Output() tagsChange = new EventEmitter<ReadonlyArray<T>>();
 
@@ -187,8 +200,11 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
     /** Raised when a tag has been clicked. The `tag` property of the event contains the clicked tag. Call `preventDefault()` on the event to prevent the default behaviour of selecting the tag. */
     @Output() tagClick = new EventEmitter<TagInputEvent>();
 
-    // When clicking on the input during mutliple mode it will send a on touched event to the parent component
+    // When clicking on the input during multiple mode it will send a on touched event to the parent component
     @Output() inputFocus = new EventEmitter<FocusEvent>();
+
+    // Emits when the component loses focus
+    @Output() inputBlur = new EventEmitter<FocusEvent>();
 
     @ContentChildren(TypeaheadComponent) typeaheadQuery: QueryList<TypeaheadComponent>;
 
@@ -216,6 +232,9 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
     private _onTouchedHandler: () => void = () => { };
     private _subscription: Subscription;
     private _onDestroy = new Subject<void>();
+    private _autoCloseDropdown: boolean = true;
+
+    static ngAcceptInputType_autoCloseDropdown: BooleanInput;
 
     constructor(
         private _changeDetector: ChangeDetectorRef,
@@ -388,16 +407,17 @@ export class TagInputComponent<T = any> implements AfterContentInit, OnChanges, 
 
         // If a click on the typeahead is in progress, don't do anything.
         // This works around an issue in IE where clicking a scrollbar drops focus.
-        if (this.typeahead && this.typeahead.clicking) {
+        if (this.typeahead?.clicking) {
             return;
         }
 
         // Close the dropdown on blur
         setTimeout(() => {
-            if (!this._element.nativeElement.contains(this._document.activeElement)) {
+            if (!this._element.nativeElement.contains(this._document.activeElement) && this.autoCloseDropdown) {
                 this.selectedIndex = -1;
                 if (this.typeahead) {
                     this.typeahead.open = false;
+                    this._changeDetector.markForCheck();
                 }
             }
         }, 200);
@@ -829,3 +849,11 @@ export interface TagApi<T = any> {
  * The function used to return custom class information, for use in `ngClass`.
  */
 export type TagClassFunction<T = any> = (tag: T, index: number, selected: boolean) => (string | string[] | Set<string>);
+
+export type TagInputDisplayFunction<T> = (option: T) => string;
+
+export interface TagTemplateContext<T = string | any> {
+    tag: T;
+    index: number;
+    api: TagApi;
+}

@@ -150,7 +150,7 @@
         <ul>
             <li><code>option: T</code> - the string or custom object representing the option.</li>
             <li><code>api: TypeaheadOptionApi</code> - provides the functions <code>getKey</code>,
-                <code>getDisplay</code> and <code>getDisplayHtml</code>. See the section below for more
+                <code>getDisplay</code>, <code>getDisplayHtml</code> and <code>getDisabled</code>. See the section below for more
                 information.</li>
         </ul>
     </tr>
@@ -173,6 +173,12 @@
     </tr>
     <tr uxd-api-property name="recentOptionsMaxCount" type="number" defaultValue="5">
         Maximum number of displayed recently selected options.
+    </tr>
+    <tr uxd-api-property name="optionsHeadingTemplate" type="TemplateRef">
+        <p>A template which will display custom headings for normal options.</p>
+    </tr>
+    <tr uxd-api-property name="recentOptionsHeadingTemplate" type="TemplateRef">
+        <p>A template which will display custom headings for recent options.</p>
     </tr>
 </uxd-api-properties>
 
@@ -202,13 +208,16 @@
     <tr uxd-api-property name="getKey" args="option: T" returns="string">
         Returns the unique key value of the given <code>option</code>.
     </tr>
-    <tr uxd-api-property name="getDisplay" args="option: any" returns="string">
+    <tr uxd-api-property name="getDisplay" args="option: T" returns="string">
         Returns the display value of the given <code>option</code>.
     </tr>
     <tr uxd-api-property name="getDisplayHtml" args="option: T" returns="string">
         Returns the display value of the given <code>option</code> with HTML markup added to highlight
         the part which matches the current <code>filter</code> value. Override the
         <code>ux-filter-match</code> class in CSS to modify the default appearance.
+    </tr>
+    <tr uxd-api-property name="getDisabled" args="option: T" returns="boolean">
+        Returns the disabled state of the given <code>option</code>.
     </tr>
 </uxd-api-properties>
 

@@ -14,6 +14,7 @@ export class SelectionDirective<T> implements AfterContentInit, OnDestroy {
 
     /** Defines the items that should be selected. */
     @Input() set uxSelection(items: T[]) {
+        this._lastSelection = items;
         this._selectionService.selectOnly(...items);
     }
 
@@ -44,6 +45,17 @@ export class SelectionDirective<T> implements AfterContentInit, OnDestroy {
         this._selectionService.isKeyboardEnabled = isKeyboardEnabled;
     }
 
+    /** 
+     * The full set of selection items.
+     * Only needed if the full set of `uxSelectionItem`s is not available, e.g. within a virtual scroll container.
+     */
+    @Input() set selectionItems(value: T[]) {
+        this._hasExplicitDataset = !!value;
+        if (value) {
+            this._selectionService.dataset = value;
+        }
+    }
+
     /** The tabstop of the selection outer element */
     @Input() @HostBinding('attr.tabindex') tabindex: number = null;
 
@@ -57,10 +69,13 @@ export class SelectionDirective<T> implements AfterContentInit, OnDestroy {
     private _onDestroy = new Subject<void>();
 
     /** Store the previous selection so we don't emit more than we have to */
-    private _lastSelection: ReadonlyArray<T>;
+    private _lastSelection: ReadonlyArray<T> = [];
+
+    /** Whether a value has been provided to the `selectionItems` input. */
+    private _hasExplicitDataset: boolean = false;
 
     constructor(private _selectionService: SelectionService<T>, private _cdRef: ChangeDetectorRef) {
-        _selectionService.selection$.pipe(takeUntil(this._onDestroy), debounceTime(0)).subscribe(items => {
+        _selectionService.selection$.pipe(debounceTime(0), takeUntil(this._onDestroy)).subscribe(items => {
             if (this.isSelectionChanged(items)) {
                 this.uxSelectionChange.emit(items);
             }
@@ -88,8 +103,11 @@ export class SelectionDirective<T> implements AfterContentInit, OnDestroy {
      */
     update(): void {
 
-        this._selectionService.dataset = this.items.map(item => item.uxSelectionItem);
-
+        // Capture the set of data items from the ContentChildren, unless an explicit value has been provided.
+        if (!this._hasExplicitDataset) {
+            this._selectionService.dataset = this.items.map(item => item.uxSelectionItem);
+        }
+        
         // Make sure that a tab target has been defined so that the component can be tabbed to.
         if (this._selectionService.focus$.getValue() === null && this._selectionService.dataset.length > 0) {
             this._selectionService.focus$.next(this._selectionService.dataset[0]);

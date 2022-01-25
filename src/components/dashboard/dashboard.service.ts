@@ -1,10 +1,11 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { BehaviorSubject, Observable, Subject, combineLatest } from 'rxjs';
+import { BehaviorSubject, combineLatest, Observable, Subject } from 'rxjs';
 import { distinctUntilChanged, filter, map, takeUntil } from 'rxjs/operators';
 import { tick } from '../../common/index';
+import { DragScrollEvent } from '../../directives/drag/index';
 import { DashboardOptions } from './dashboard.component';
-import { DashboardWidgetComponent } from './widget/dashboard-widget.component';
 import { DashboardStackMode } from './widget/dashboard-stack-mode.enum';
+import { DashboardWidgetComponent } from './widget/dashboard-widget.component';
 
 @Injectable()
 export class DashboardService implements OnDestroy {
@@ -60,11 +61,17 @@ export class DashboardService implements OnDestroy {
             )
             .subscribe(([layout]) => {
                 this.setLayoutData(layout);
+                this.renderDashboard();
             });
 
-        this.stacked$.pipe(takeUntil(this._onDestroy), filter(stacked => stacked === true)).subscribe(this.updateWhenStacked.bind(this));
-        this.widgets$.pipe(takeUntil(this._onDestroy), tick()).subscribe(() => this.renderDashboard());
-        this.dimensions$.pipe(takeUntil(this._onDestroy), tick()).subscribe(() => this.renderDashboard());
+        this.stacked$
+            .pipe(
+                distinctUntilChanged(),
+                filter(stacked => stacked === true),
+                takeUntil(this._onDestroy)
+            ).subscribe(this.updateWhenStacked.bind(this));
+        this.widgets$.pipe(tick(), takeUntil(this._onDestroy)).subscribe(() => this.renderDashboard());
+        this.dimensions$.pipe(tick(), takeUntil(this._onDestroy)).subscribe(() => this.renderDashboard());
     }
 
     ngOnDestroy(): void {
@@ -105,7 +112,15 @@ export class DashboardService implements OnDestroy {
      */
     getLayoutData(): DashboardLayoutData[] {
         return this.widgets.map(widget => {
-            return { id: widget.id, col: widget.getColumn(), row: widget.getRow(), colSpan: widget.getColumnSpan(), rowSpan: widget.getRowSpan() };
+            return {
+                id: widget.id,
+                col: widget.getColumn(),
+                row: widget.getRow(),
+                colSpan: widget.getColumnSpan(),
+                rowSpan: widget.getRowSpan(),
+                minColSpan: widget.minColSpan,
+                minRowSpan: widget.minRowSpan
+            };
         });
     }
 
@@ -125,6 +140,8 @@ export class DashboardService implements OnDestroy {
                 target.setRow(widget.row);
                 target.setColumnSpan(widget.colSpan);
                 target.setRowSpan(widget.rowSpan);
+                target.minColSpan = widget.minColSpan ?? 1;
+                target.minRowSpan = widget.minRowSpan ?? 1;
             }
         });
     }
@@ -139,11 +156,6 @@ export class DashboardService implements OnDestroy {
 
         // ensure the column width is not below the min widths
         this.stacked$.next(this.columnWidth < this.options.minWidth);
-
-        // ensure the row height is not below the min widths
-        if (this._rowHeight < this.options.minWidth) {
-            this._rowHeight = this.options.minWidth;
-        }
 
         this.setDashboardLayout();
 
@@ -269,6 +281,7 @@ export class DashboardService implements OnDestroy {
      * @param action The the widget to resize
      */
     onResizeStart(action: DashboardAction): void {
+        this.cacheWidgets();
 
         // store the mouse event
         this._event = action.event;
@@ -429,6 +442,22 @@ export class DashboardService implements OnDestroy {
             dimensions.height = this.options.minHeight;
         }
 
+        const minWidth = ((this.getColumnWidth() * action.widget.minColSpan) - this.getColumnWidth() / 2) + 1;
+        const isBelowMinWidth = dimensions.width < minWidth;
+
+        if (isBelowMinWidth) {
+            dimensions.x = action.widget.x;
+            dimensions.width = minWidth;
+        }
+
+        const minHeight = ((this.options.rowHeight * action.widget.minRowSpan) - this.options.rowHeight / 2) + 1;
+        const isBelowMinHeight = dimensions.height < minHeight;
+
+        if (isBelowMinHeight) {
+            dimensions.y = action.widget.y;
+            dimensions.height = minHeight;
+        }
+
         // update the widget actual values
         action.widget.setBounds(dimensions.x, dimensions.y, dimensions.width, dimensions.height);
 
@@ -484,6 +513,8 @@ export class DashboardService implements OnDestroy {
 
         this._widgetOrigin = {};
 
+        this.isDragging$.getValue().sendToBack();
+
         this.isDragging$.next(null);
 
         this.userLayoutChange$.next(this.getLayoutData());
@@ -492,36 +523,22 @@ export class DashboardService implements OnDestroy {
     onDrag(action: DashboardAction): void {
 
         // if there was no movement then do nothing
-        if (action.event.pageX === this._event.pageX && action.event.pageY === this._event.pageY) {
+        if (action.event.clientX === this._event.clientX && action.event.clientY === this._event.clientY) {
             return;
         }
 
         // get the current mouse position
-        const mouseX = action.event.pageX - this._event.pageX;
-        const mouseY = action.event.pageY - this._event.pageY;
+        const mouseX = action.event.clientX - this._event.clientX;
+        const mouseY = action.event.clientY - this._event.clientY;
 
         // store the latest event
         this._event = action.event;
 
-        const dimensions: DashboardWidgetDimensions = {
-            x: action.widget.x + mouseX,
-            y: action.widget.y + mouseY,
-            width: action.widget.width,
-            height: action.widget.height
-        };
+        this.moveWidget(action.widget, mouseX, mouseY);
+    }
 
-        this.restoreWidgets(true);
-
-        // update widget position
-        action.widget.setBounds(dimensions.x, dimensions.y, dimensions.width, dimensions.height);
-
-        // update placeholder position and value
-        this.setPlaceholderBounds(true, dimensions.x, dimensions.y, dimensions.width, dimensions.height);
-
-        // show the widget positions if the current positions and sizes were to persist
-        this.shiftWidgets();
-
-        this.setDashboardHeight();
+    onDragScroll(widget: DashboardWidgetComponent, event: DragScrollEvent): void {
+        this.moveWidget(widget, event.offsetX, event.offsetY);
     }
 
     getRowHeight(): number {
@@ -1068,21 +1085,37 @@ export class DashboardService implements OnDestroy {
     /**
      * Widgets should not be allowed to have a vacant space above them - if there is one they should move upwards to fill it
      */
-    shiftWidgetsUp(): void {
+    shiftWidgetsUp(): boolean {
 
         // check whether or not changes have been made - if so we need to repeat until stable
         let stable = true;
 
         // iterate each widget and
         this.widgets.forEach(widget => {
+            const widgetIsOnTopRow = widget.getRow() === 0;
+            const widgetIsBeingResized = this._actionWidget?.widget === widget;
+            const widgetShouldBeAutoPositioned = widget.autoPositioning || this.stacked;
+            const widgetIsBeingMoved = !widgetShouldBeAutoPositioned && this.isDragging$.value?.id === widget.id;
 
-            // if widget is already on the top row then do nothing
-            if (widget.getRow() === 0) {
+            if (widgetIsOnTopRow || widgetIsBeingResized || widgetIsBeingMoved || (!widgetShouldBeAutoPositioned && !this._cache)) {
                 return;
             }
 
-            // if we are currently dragging and this is the dragging widget then skip
-            if (this._actionWidget && this._actionWidget.widget === widget) {
+            if (!widgetShouldBeAutoPositioned) {
+                const cachedVersionOfWidget = this._cache.find(cachedWidget => cachedWidget.id === widget.id);
+                const isPreviousPositionAvailable = this.getPositionAvailable(
+                    cachedVersionOfWidget.column,
+                    cachedVersionOfWidget.row,
+                    cachedVersionOfWidget.columnSpan,
+                    cachedVersionOfWidget.rowSpan,
+                    widget
+                );
+
+                if (isPreviousPositionAvailable && widget.row !== cachedVersionOfWidget.row) {
+                    widget.setRow(cachedVersionOfWidget.row);
+                    stable = false;
+                }
+
                 return;
             }
 
@@ -1095,7 +1128,10 @@ export class DashboardService implements OnDestroy {
         // if changes occurred then we should repeat the process
         if (!stable) {
             this.shiftWidgetsUp();
+            return true;
         }
+
+        return false;
     }
 
     /**
@@ -1187,11 +1223,6 @@ export class DashboardService implements OnDestroy {
     /** Programmatically resize a widget in a given direction */
     onResize(widget: DashboardWidgetComponent, direction: ActionDirection): void {
 
-        // do not perform resizing if we are in stacked mode
-        if (this.stacked) {
-            return;
-        }
-
         // perform the resizing
         let deltaX = 0, deltaY = 0;
 
@@ -1248,6 +1279,22 @@ export class DashboardService implements OnDestroy {
             dimensions.height = this.getRowHeight();
         }
 
+        const minWidth = this.getColumnWidth() * widget.minColSpan;
+        const isBelowMinWidth = dimensions.width < minWidth;
+
+        if (isBelowMinWidth) {
+            dimensions.x = widget.x;
+            dimensions.width = minWidth;
+        }
+
+        const minHeight = this.options.rowHeight * widget.minRowSpan;
+        const isBelowMinHeight = dimensions.height < minHeight;
+
+        if (isBelowMinHeight) {
+            dimensions.y = widget.y;
+            dimensions.height = minHeight;
+        }
+
         // move the widget to the placeholder position
         widget.setBounds(dimensions.x, dimensions.y, dimensions.width, dimensions.height);
 
@@ -1277,9 +1324,38 @@ export class DashboardService implements OnDestroy {
 
         return widgets;
     }
+
+    private moveWidget(widget: DashboardWidgetComponent, offsetX: number, offsetY: number): void {
+
+        const dimensions: DashboardWidgetDimensions = {
+            x: widget.x + offsetX,
+            y: widget.y + offsetY,
+            width: widget.width,
+            height: widget.height
+        };
+
+        this.restoreWidgets(true);
+
+        // update widget position
+        widget.setBounds(dimensions.x, dimensions.y, dimensions.width, dimensions.height);
+
+        // update placeholder position and value
+        this.setPlaceholderBounds(true, dimensions.x, dimensions.y, dimensions.width, dimensions.height);
+
+        // show the widget positions if the current positions and sizes were to persist
+        this.shiftWidgets();
+
+        this.setDashboardHeight();
+    }
 }
 
-export const defaultOptions: DashboardOptions = { columns: 5, padding: 5, minWidth: 100, minHeight: 100, emptyRow: true };
+export const defaultOptions: DashboardOptions = {
+    columns: 5,
+    padding: 5,
+    minWidth: 100,
+    minHeight: 100,
+    emptyRow: true
+};
 
 export interface DashboardDimensions {
     width?: number;
@@ -1332,6 +1408,8 @@ export interface DashboardLayoutData {
     row: number;
     colSpan: number;
     rowSpan: number;
+    minColSpan?: number;
+    minRowSpan?: number;
 }
 
 export enum ActionDirection {

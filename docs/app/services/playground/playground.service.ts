@@ -1,10 +1,18 @@
 import { DOCUMENT } from '@angular/common';
 import { Inject, Injectable } from '@angular/core';
 import { IPlayground } from '../../interfaces/IPlayground';
+import { SiteThemeId } from '../../interfaces/SiteTheme';
 import { AppConfiguration } from '../app-configuration/app-configuration.service';
+import { SiteThemeService } from '../site-theme/site-theme.service';
 import { AngularPlaygroundStrategy } from './strategies/angular-strategy';
 import { CssPlaygroundStrategy } from './strategies/css-strategy';
 import { PlaygroundStrategy } from './strategies/playground-strategy';
+import { KeppelThemeStrategy } from './strategies/themes/keppel-strategy';
+import { MicroFocusNextThemeStrategy } from './strategies/themes/microfocus-next-strategy';
+import { MicroFocusThemeStrategy } from './strategies/themes/microfocus-strategy';
+import { RobotoThemeStrategy } from './strategies/themes/roboto-strategy';
+import { ThemeStrategy } from './strategies/themes/theme-strategy';
+import { WhiteLabelThemeStrategy } from './strategies/themes/white-label-strategy';
 import { DocumentationType, DOCUMENTATION_TOKEN } from './tokens/documentation.token';
 import { PlaygroundHelper } from './utilities/playground-helper';
 
@@ -19,7 +27,8 @@ export class PlaygroundService {
         /** Determine if we are in a Keppel or MicroFocus documentation site */
         @Inject(DOCUMENTATION_TOKEN) private _documentationType: DocumentationType,
         /** Get the global configuation properties */
-        private _appConfig: AppConfiguration
+        private _appConfig: AppConfiguration,
+        private _siteThemeService: SiteThemeService
     ) { }
 
     /** Launch the code playground */
@@ -66,12 +75,28 @@ export class PlaygroundService {
     }
 
     private createPlaygroundStrategy(playground: IPlayground): PlaygroundStrategy {
+        const theme = this._siteThemeService.theme$.value;
         switch (playground.framework) {
             case 'css':
-                return new CssPlaygroundStrategy(this._documentationType);
+                return new CssPlaygroundStrategy(this._documentationType, this.createThemeStrategy(theme));
             case 'angular':
             default:
-                return new AngularPlaygroundStrategy(this._documentationType);
+                return new AngularPlaygroundStrategy(this._documentationType, this.createThemeStrategy(theme));
+        }
+    }
+
+    private createThemeStrategy(theme: SiteThemeId): ThemeStrategy {
+        switch (theme) {
+            case SiteThemeId.MicroFocusNext:
+                return new MicroFocusNextThemeStrategy();
+            case SiteThemeId.WhiteLabel:
+                return new WhiteLabelThemeStrategy();
+            case SiteThemeId.MicroFocus:
+                return new MicroFocusThemeStrategy();
+            case SiteThemeId.Keppel:
+                return new KeppelThemeStrategy();
+            case SiteThemeId.Roboto:
+                return new RobotoThemeStrategy();
         }
     }
 }

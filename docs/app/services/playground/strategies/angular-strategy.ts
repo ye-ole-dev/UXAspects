@@ -7,9 +7,9 @@ export class AngularPlaygroundStrategy extends PlaygroundStrategy {
 
     getGlobalExternalScripts(): string[] {
         return [
-            `https://cdnjs.cloudflare.com/ajax/libs/typescript/3.9.6/typescript.min.js`,
+            `https://cdnjs.cloudflare.com/ajax/libs/typescript/4.0.5/typescript.min.js`,
             `https://cdnjs.cloudflare.com/ajax/libs/core-js/2.5.7/core.min.js`,
-            `https://cdnjs.cloudflare.com/ajax/libs/zone.js/0.9.1/zone.min.js`,
+            `https://cdnjs.cloudflare.com/ajax/libs/zone.js/0.10.2/zone.min.js`,
             `https://cdnjs.cloudflare.com/ajax/libs/systemjs/0.19.47/system.js`,
             'systemjs.config.js'
         ];
@@ -23,21 +23,6 @@ export class AngularPlaygroundStrategy extends PlaygroundStrategy {
 
     getBodyScripts(): string[] {
         return [`System.import('main.ts').catch(console.error.bind(console));`];
-    }
-
-    getGlobalExternalStyles(assetsUrl: string): string[] {
-        const stylesheets = [
-            SystemJSHelper.getPackageUrl({ name: 'bootstrap', path: 'bootstrap@3.3.7/dist/css/bootstrap.min.css' }),
-        ];
-
-        if (this.documentationType === DocumentationType.Keppel) {
-            stylesheets.push(`${assetsUrl}/css/ux-aspects.css`);
-        } else {
-            stylesheets.push(`${assetsUrl}/styles/ux-aspects.css`);
-            stylesheets.push(`${assetsUrl}/styles/quantum-ux-aspects.css`);
-        }
-
-        return stylesheets;
     }
 
     getGlobalStyles(): string[] {

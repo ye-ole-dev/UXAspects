@@ -1,5 +1,6 @@
 import { FocusableOption, FocusOrigin } from '@angular/cdk/a11y';
-import { ChangeDetectionStrategy, Component, ElementRef, HostListener, Input, OnDestroy, OnInit, Renderer2, Output, EventEmitter } from '@angular/core';
+import { BooleanInput, coerceBooleanProperty } from '@angular/cdk/coercion';
+import { ChangeDetectionStrategy, Component, ElementRef, EventEmitter, HostListener, Input, OnDestroy, OnInit, Output, Renderer2 } from '@angular/core';
 import { BehaviorSubject, Subject } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { isKeyboardTrigger } from '../../../common/index';
@@ -12,6 +13,7 @@ import { MenuItemType } from './menu-item-type.enum';
     templateUrl: './menu-item.component.html',
     changeDetection: ChangeDetectionStrategy.OnPush,
     host: {
+        '[attr.disabled]': 'disabled ? "disabled" : null',
         '[attr.role]': 'role',
         '[class.disabled]': 'disabled',
         '[class.ux-menu-item]': 'true',
@@ -21,7 +23,22 @@ import { MenuItemType } from './menu-item-type.enum';
 export class MenuItemComponent implements OnInit, OnDestroy, FocusableOption {
 
     /** Define if this item is disabled or not */
-    @Input() disabled: boolean = false;
+    @Input() set disabled(disabled: boolean) {
+        this._disabled = coerceBooleanProperty(disabled);
+    }
+
+    get disabled(): boolean {
+        return this._disabled;
+    }
+
+    /** Determine if the menu should close on item click/enter.*/
+    @Input() set closeOnSelect(value: boolean) {
+        this._closeOnSelect = coerceBooleanProperty(value);
+    }
+
+    get closeOnSelect(): boolean {
+        return this._closeOnSelect;
+    }
 
     /** Define the role of the element */
     @Input() role: 'menuitem' | 'menuitemradio' | 'menuitemcheckbox' = 'menuitem';
@@ -54,6 +71,10 @@ export class MenuItemComponent implements OnInit, OnDestroy, FocusableOption {
 
     /** Automatically unsubscribe from observables on destroy */
     private readonly _onDestroy$ = new Subject<void>();
+
+    private _disabled: boolean = false;
+
+    private _closeOnSelect: boolean = true;
 
     constructor(
         private readonly _menu: MenuComponent,
@@ -118,9 +139,12 @@ export class MenuItemComponent implements OnInit, OnDestroy, FocusableOption {
     @HostListener('keydown.enter', ['$event'])
     _onClick(event: MouseEvent | KeyboardEvent): void {
         if (!this.disabled) {
-            this.onClick$.next(isKeyboardTrigger(event) ? 'keyboard' : 'mouse');
+            if (this.closeOnSelect) {
+                this.onClick$.next(isKeyboardTrigger(event) ? 'keyboard' : 'mouse');
+            }
             this.activate.emit(event);
         }
+        event.preventDefault();
     }
 
     /** Forward any keyboard events to the MenuComponent for accessibility */
@@ -134,4 +158,6 @@ export class MenuItemComponent implements OnInit, OnDestroy, FocusableOption {
         this._renderer.setAttribute(this._elementRef.nativeElement, 'tabindex', isTabbable ? '0' : '-1');
     }
 
+    static ngAcceptInputType_disabled: boolean | string;
+    static ngAcceptInputType_closeOnSelect: BooleanInput;
 }

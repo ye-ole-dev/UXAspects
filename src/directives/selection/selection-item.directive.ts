@@ -1,7 +1,7 @@
 import { SPACE } from '@angular/cdk/keycodes';
-import { Directive, ElementRef, EventEmitter, HostBinding, HostListener, Input, OnDestroy, OnInit, Output } from '@angular/core';
-import { Subject } from 'rxjs';
-import { map, takeUntil } from 'rxjs/operators';
+import { ChangeDetectorRef, Directive, ElementRef, EventEmitter, HostBinding, HostListener, Input, OnChanges, OnDestroy, OnInit, Output, SimpleChanges } from '@angular/core';
+import { Subject, Subscription } from 'rxjs';
+import { debounceTime, map, skip, takeUntil, tap } from 'rxjs/operators';
 import { FocusIndicator, FocusIndicatorService, ManagedFocusContainerService } from '../accessibility/index';
 import { SelectionService } from './selection.service';
 
@@ -9,7 +9,7 @@ import { SelectionService } from './selection.service';
     selector: '[uxSelectionItem]',
     exportAs: 'ux-selection-item'
 })
-export class SelectionItemDirective<T> implements OnInit, OnDestroy {
+export class SelectionItemDirective<T> implements OnInit, OnChanges, OnDestroy {
 
     /** Defines the data associated with this item. */
     @Input() uxSelectionItem: T;
@@ -46,8 +46,11 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
     /** Defines whether or not this item is currently selected. */
     @Output() selectedChange = new EventEmitter<boolean>();
 
-    /** Store the current focused state of the item */
-    @HostBinding('class.ux-selection-focused') active: boolean = false;
+    /** Store whether this item is the focusable item */
+    active: boolean = false;
+
+    /** Store the focused state of the element */
+    @HostBinding('class.ux-selection-focused') isFocused: boolean = false;
 
     @HostBinding('attr.tabindex')
     get attrTabIndex(): number {
@@ -63,6 +66,12 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
     /** Store the tab indexed if using the managed focus container */
     private _managedTabIndex: number = -1;
 
+    /** Determine if there is a pending state change as we debounce before emitting */
+    private _hasPendingStateChange: boolean = false;
+
+    /** Subscription to the selection state observable. */
+    private _selectionStateSubscription: Subscription;
+
     /** Automatically unsubscribe when the component is destroyed */
     private readonly _onDestroy = new Subject<void>();
 
@@ -70,10 +79,11 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
     private readonly _focusIndicator: FocusIndicator;
 
     constructor(
-        private _selectionService: SelectionService<T>,
-        private _elementRef: ElementRef,
-        focusIndicatorService: FocusIndicatorService,
-        private _managedFocusContainerService: ManagedFocusContainerService
+        private readonly _selectionService: SelectionService<T>,
+        private readonly _elementRef: ElementRef,
+        readonly focusIndicatorService: FocusIndicatorService,
+        private readonly _managedFocusContainerService: ManagedFocusContainerService,
+        private readonly _changeDetector: ChangeDetectorRef
     ) {
         this._focusIndicator = focusIndicatorService.monitor(_elementRef.nativeElement);
     }
@@ -84,20 +94,6 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
         if (!this.uxSelectionItem) {
             throw new Error('The uxSelectionItem directive must have data associated with it.');
         }
-
-        // subscribe to selection changes on this item
-        this._selectionService.getSelectionState(this.uxSelectionItem).pipe(takeUntil(this._onDestroy)).subscribe(selected => {
-
-            // store the selected state
-            this._selected = selected;
-
-            // emit the selected state
-            this.selectedChange.emit(selected);
-        });
-
-        this._selected = this._selectionService.isSelected(this.uxSelectionItem);
-
-        this.selectedChange.emit(this._selected);
 
         // subscribe to changes to the active state
         this._selectionService.active$.pipe(takeUntil(this._onDestroy), map(active => active === this.uxSelectionItem)).subscribe(active => {
@@ -120,6 +116,19 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
 
         // Watch for focus within the container element and manage tabindex of descendants
         this._managedFocusContainerService.register(this._elementRef.nativeElement, this);
+
+        // Listen for changes to the focus state and apply the appropriate class
+       this._focusIndicator.origin$.pipe(map(origin => origin === 'keyboard'), takeUntil(this._onDestroy))
+           .subscribe(isFocused => {
+               this.isFocused = isFocused;
+               this._changeDetector.markForCheck();
+           });
+    }
+
+    ngOnChanges(changes: SimpleChanges): void {
+        if (changes.uxSelectionItem) {
+            this.updateSelectionItem();
+        }
     }
 
     ngOnDestroy(): void {
@@ -131,7 +140,7 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
 
     @HostListener('click', ['$event'])
     click(event: MouseEvent): void {
-        if (!this._isDisabled && this._selectionService.isEnabled && this._selectionService.isClickEnabled) {
+        if (!this._isDisabled && !this._hasPendingStateChange && this._selectionService.isEnabled && this._selectionService.isClickEnabled) {
             this._selectionService.strategy.click(event, this.uxSelectionItem);
         }
     }
@@ -180,5 +189,36 @@ export class SelectionItemDirective<T> implements OnInit, OnDestroy {
         if (!this._isDisabled && this._selectionService.isEnabled) {
             this._selectionService.strategy.deselect(this.uxSelectionItem);
         }
+    }
+
+    private updateSelectionItem(): void {
+
+        if (this._selectionStateSubscription) {
+            this._selectionStateSubscription.unsubscribe();
+        }
+
+        // subscribe to selection changes on this item (don't emit the initial value)
+        this._selectionStateSubscription = this._selectionService.getSelectionState(this.uxSelectionItem).pipe(
+            skip(1),
+            tap(() => this._hasPendingStateChange = true),
+            debounceTime(0),
+            takeUntil(this._onDestroy)
+        ).subscribe(selected => {
+            this._hasPendingStateChange = false;
+
+            if (this._selected === selected) {
+                return;
+            }
+
+            // store the selected state
+            this._selected = selected;
+
+            // emit the selected state
+            this.selectedChange.emit(selected);
+
+            this._changeDetector.markForCheck();
+        });
+
+        this._selected = this._selectionService.isSelected(this.uxSelectionItem);
     }
 }

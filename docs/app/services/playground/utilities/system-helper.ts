@@ -1,9 +1,9 @@
 import { DocumentationType } from '../tokens/documentation.token';
 
-const ANGULAR_VERSION = '10';
-const CDK_VERSION = '10';
+const ANGULAR_VERSION = '11';
+const CDK_VERSION = '11';
 const D3_VERSION = '5.9.2';
-const NGX_BOOTSTRAP_VERSION = '5.3.2';
+const NGX_BOOTSTRAP_VERSION = '6.2.0';
 
 export class SystemJSHelper {
 
@@ -27,6 +27,7 @@ export class SystemJSHelper {
         { name: '@angular/cdk/bidi', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-bidi.umd.js` },
         { name: '@angular/cdk/coercion', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-coercion.umd.js` },
         { name: '@angular/cdk/collections', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-collections.umd.js` },
+        { name: '@angular/cdk/drag-drop', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-drag-drop.umd.js`},
         { name: '@angular/cdk/keycodes', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-keycodes.umd.js` },
         { name: '@angular/cdk/layout', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-layout.umd.js` },
         { name: '@angular/cdk/observers', path: `@angular/cdk@${CDK_VERSION}/bundles/cdk-observers.umd.js` },
@@ -43,13 +44,11 @@ export class SystemJSHelper {
         { name: 'rxjs', path: 'rxjs@6.5.2' },
         { name: 'ngx-bootstrap', path: `ngx-bootstrap@${NGX_BOOTSTRAP_VERSION}/bundles/ngx-bootstrap.umd.min.js` },
         { name: 'chance', path: 'chance' },
-        { name: 'chart.js', path: 'chart.js/dist/Chart.bundle.min.js' },
+        { name: 'chart.js', path: 'chart.js@2.9.3/dist/Chart.bundle.min.js' },
         { name: 'ng2-charts', path: 'ng2-charts@2.3.0/bundles/ng2-charts.umd.js' },
         { name: 'lodash', path: 'lodash/lodash.js' },
         { name: 'ng2-file-upload', path: 'ng2-file-upload/bundles/ng2-file-upload.umd.js' },
         { name: 'angular-split', path: 'angular-split@3.0.2/bundles/angular-split.umd.js' },
-        { name: 'dragula', path: 'dragula/dist/dragula.js' },
-        { name: 'dragula/dist/dragula', path: 'dragula/dist/dragula.js' },
         { name: 'ngx-mask', path: 'ngx-mask/bundles/ngx-mask.umd.js' },
         { name: 'resize-observer-polyfill', path: 'resize-observer-polyfill@1.5.0/dist/ResizeObserver.js' },
         // d3

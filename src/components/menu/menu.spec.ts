@@ -13,12 +13,15 @@ import { MenuModule } from './menu.module';
                 type="button"
                 id="menu-item-1"
                 uxMenuItem
-                (activate)="item1Activated($event)">
+                (click)="onClick()"
+                [disabled]="disabled"
+                (activate)="onActivate($event)">
                 Item One
             </button>
             <ux-menu-divider></ux-menu-divider>
             <button
                 uxMenuItem
+                [disabled]="disabled"
                 #subMenuTrigger="ux-menu-trigger"
                 [uxMenuTriggerFor]="subMenu">
                 Item Two
@@ -42,10 +45,12 @@ import { MenuModule } from './menu.module';
     `
 })
 export class MenuTestComponent {
+    disabled: boolean = false;
     @ViewChild('menuTrigger', { static: true }) trigger: MenuTriggerDirective;
     @ViewChild('subMenuTrigger', { static: true }) subMenuTrigger: MenuTriggerDirective;
 
-    item1Activated(_: MouseEvent | KeyboardEvent): void {}
+    onActivate(_: MouseEvent | KeyboardEvent): void { }
+    onClick(_: MouseEvent): void { }
 }
 
 describe('MenuComponent', () => {
@@ -354,13 +359,13 @@ describe('MenuComponent', () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        spyOn(component, 'item1Activated');
+        spyOn(component, 'onActivate');
 
         const item1Element = overlayContainerElement.querySelector('#menu-item-1') as HTMLButtonElement;
         expect(item1Element).toBeTruthy();
         item1Element.click();
 
-        expect(component.item1Activated).toHaveBeenCalledTimes(1);
+        expect(component.onActivate).toHaveBeenCalledTimes(1);
     });
 
     it('should emit an activated event when pressing enter key on a menu item', async () => {
@@ -368,14 +373,60 @@ describe('MenuComponent', () => {
         fixture.detectChanges();
         await fixture.whenStable();
 
-        spyOn(component, 'item1Activated');
+        spyOn(component, 'onActivate');
 
         const item1Element = overlayContainerElement.querySelector('#menu-item-1') as HTMLButtonElement;
         expect(item1Element).toBeTruthy();
         item1Element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
 
-        expect(component.item1Activated).toHaveBeenCalledTimes(1);
+        expect(component.onActivate).toHaveBeenCalledTimes(1);
     });
+
+    it('should not emit a click or activated event when disabled is true.', async () => {
+        component.disabled = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // open menu
+        component.trigger.openMenu();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // get the child submenu item
+        const menuItem = overlayContainerElement.querySelector('#menu-item-1') as HTMLButtonElement;
+        expect(menuItem).toBeTruthy();
+
+        spyOn(component, 'onActivate');
+        spyOn(component, 'onClick');
+
+        // perform a click
+        menuItem.click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        expect(component.onActivate).not.toHaveBeenCalled();
+        expect(component.onClick).not.toHaveBeenCalled();
+    });
+
+    it('should not open submenu when menu item is disabled ', async () => {
+        component.disabled = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // open menu
+        component.trigger.openMenu();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        component.subMenuTrigger.openMenu();
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // get the child submenu item
+        const subItemMenu = overlayContainerElement.querySelector('#submenu-item-1') as HTMLButtonElement;
+        expect(subItemMenu).toBeFalsy();
+    });
+
 });
 
 @Component({
@@ -396,7 +447,7 @@ describe('MenuComponent', () => {
                 <span class="dropdown-menu-text">Export</span>
             </button>
 
-            <button type="button" uxMenuItem>
+            <button type="button" id="menu-item-2" (activate)="onActivate($event)" [closeOnSelect]="closeOnSelect" uxMenuItem>
                 <span class="dropdown-menu"></span>
                 <span class="dropdown-menu-text">Annotate</span>
             </button>
@@ -410,9 +461,12 @@ describe('MenuComponent', () => {
 })
 export class MenuTriggerDestroyTestComponent {
     @ViewChild(MenuTriggerDirective, { static: false })
+
     trigger: MenuTriggerDirective;
+    onActivate(_: MouseEvent | KeyboardEvent): void { }
 
     showTrigger: boolean = true;
+    closeOnSelect: boolean = true;
 }
 
 describe('MenuTriggerDestroyTestComponent', () => {
@@ -447,4 +501,39 @@ describe('MenuTriggerDestroyTestComponent', () => {
         expect(component.trigger).toBeFalsy();
         expect(document.querySelectorAll('.ux-menu').length).toBe(0);
     });
+
+    it('should not close the menu when an item is clicked when closeOnSelect is false', async () => {
+        component.closeOnSelect = false;
+        // open menu
+        component.trigger.openMenu();
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // close menu by clicking on an item
+        const items = document.querySelectorAll<HTMLButtonElement>(
+            'button[uxmenuitem]'
+        );
+
+        items.item(1).click();
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(document.querySelectorAll('.ux-menu').length).toBe(1);
+    });
+
+    it('should not close the menu item when pressing enter key when closeOnSelect is false', async () => {
+        component.closeOnSelect = false;
+        component.trigger.openMenu();
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const item2Element = document.querySelector('#menu-item-2') as HTMLButtonElement;
+        item2Element.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }));
+
+        fixture.detectChanges();
+        await fixture.whenStable();
+        expect(document.querySelectorAll('.ux-menu').length).toBe(1);
+    });
+
 });

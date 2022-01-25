@@ -16,6 +16,111 @@ export class ChangeLogPageComponent {
 
         this.logs = [
             {
+                version: '3.10.0',
+                date: 'May 27th 2021',
+                content: require('./logs/release-v3.10.0.md')
+            },
+            {
+                version: '3.9.0',
+                date: 'May 13th 2021',
+                content: require('./logs/release-v3.9.0.md')
+            },
+            {
+                version: '3.8.1',
+                date: 'April 29th 2021',
+                content: require('./logs/release-v3.8.1.md')
+            },
+            {
+                version: '3.7.0',
+                date: 'April 15th 2021',
+                content: require('./logs/release-v3.7.0.md')
+            },
+            {
+                version: '3.6.0',
+                date: 'April 1st 2021',
+                content: require('./logs/release-v3.6.0.md')
+            },
+            {
+                version: '3.5.0',
+                date: 'March 18th 2021',
+                content: require('./logs/release-v3.5.0.md')
+            },
+            {
+                version: '3.4.0',
+                date: 'March 4th 2021',
+                content: require('./logs/release-v3.4.0.md')
+            },
+            {
+                version: '3.3.0',
+                date: 'February 19th 2021',
+                content: require('./logs/release-v3.3.0.md')
+            },
+            {
+                version: '3.2.1',
+                date: 'February 8th 2021',
+                content: require('./logs/release-v3.2.1.md')
+            },
+            {
+                version: '3.2.0',
+                date: 'February 4th 2021',
+                content: require('./logs/release-v3.2.0.md')
+            },
+            {
+                version: '3.1.0',
+                date: 'January 21st 2021',
+                content: require('./logs/release-v3.1.0.md')
+            },
+            {
+                version: '3.0.0',
+                date: 'January 7th 2021',
+                content: require('./logs/release-v3.0.0.md')
+            },
+            {
+                version: '2.1.9',
+                date: 'November 26th 2020',
+                content: require('./logs/release-v2.1.9.md')
+            },
+            {
+                version: '2.1.8',
+                date: 'November 12th 2020',
+                content: require('./logs/release-v2.1.8.md')
+            },
+            {
+                version: '2.1.7',
+                date: 'October 29th 2020',
+                content: require('./logs/release-v2.1.7.md')
+            },
+            {
+                version: '2.1.6',
+                date: 'October 15th 2020',
+                content: require('./logs/release-v2.1.6.md')
+            },
+            {
+                version: '2.1.5',
+                date: 'October 1st 2020',
+                content: require('./logs/release-v2.1.5.md')
+            },
+            {
+                version: '2.1.4',
+                date: 'September 17th 2020',
+                content: require('./logs/release-v2.1.4.md')
+            },
+            {
+                version: '2.1.3',
+                date: 'September 3rd 2020',
+                content: require('./logs/release-v2.1.3.md')
+            },
+            {
+                version: '2.1.2',
+                date: 'August 20th 2020',
+                content: require('./logs/release-v2.1.2.md')
+            },
+            {
+                version: '2.1.1',
+                date: 'August 6th 2020',
+                content: require('./logs/release-v2.1.1.md')
+            },
+            {
                 version: '2.1.0',
                 date: 'July 24th 2020',
                 content: require('./logs/release-v2.1.0.md')

@@ -25,6 +25,10 @@
             "classname": "ux-icon-add"
         },
         {
+            "name": "address-book",
+            "classname": "ux-icon-address-book"
+        },
+        {
             "name": "advanced-search",
             "classname": "ux-icon-advanced-search"
         },
@@ -83,6 +87,10 @@
         {
             "name": "blog",
             "classname": "ux-icon-blog"
+        },
+        {
+            "name": "bloomberg",
+            "classname": "ux-icon-bloomberg"
         },
         {
             "name": "book",
@@ -155,6 +163,10 @@
         {
             "name": "catalog",
             "classname": "ux-icon-catalog"
+        },
+        {
+            "name": "change-password",
+            "classname": "ux-icon-change-password"
         },
         {
             "name": "chapter-add",
@@ -233,6 +245,10 @@
             "classname": "ux-icon-chevron-up"
         },
         {
+            "name": "chorus",
+            "classname": "ux-icon-chorus"
+        },
+        {
             "name": "circular-view",
             "classname": "ux-icon-circular-view"
         },
@@ -303,6 +319,10 @@
         {
             "name": "configuration",
             "classname": "ux-icon-configuration"
+        },
+        {
+            "name": "confluence",
+            "classname": "ux-icon-confluence"
         },
         {
             "name": "connect",
@@ -449,8 +469,16 @@
             "classname": "ux-icon-document-executable"
         },
         {
+            "name": "document-html",
+            "classname": "ux-icon-document-html"
+        },
+        {
             "name": "document-image",
             "classname": "ux-icon-document-image"
+        },
+        {
+            "name": "document-import",
+            "classname": "ux-icon-document-import"
         },
         {
             "name": "document-locked",
@@ -573,6 +601,10 @@
             "classname": "ux-icon-edit"
         },
         {
+            "name": "efax",
+            "classname": "ux-icon-efax"
+        },
+        {
             "name": "eject-filled",
             "classname": "ux-icon-eject-filled"
         },
@@ -657,6 +689,10 @@
             "classname": "ux-icon-grid"
         },
         {
+            "name": "group-add",
+            "classname": "ux-icon-group-add"
+        },
+        {
             "name": "group",
             "classname": "ux-icon-group"
         },
@@ -715,6 +751,10 @@
         {
             "name": "impact",
             "classname": "ux-icon-impact"
+        },
+        {
+            "name": "import",
+            "classname": "ux-icon-import"
         },
         {
             "name": "in-progress",
@@ -1097,6 +1137,10 @@
             "classname": "ux-icon-resources"
         },
         {
+            "name": "reuters",
+            "classname": "ux-icon-reuters"
+        },
+        {
             "name": "rewind-filled",
             "classname": "ux-icon-rewind-filled"
         },
@@ -1217,6 +1261,18 @@
             "classname": "ux-icon-shop-cart"
         },
         {
+            "name": "show-less",
+            "classname": "ux-icon-show-less"
+        },
+        {
+            "name": "show-more",
+            "classname": "ux-icon-show-more"
+        },
+        {
+            "name": "sms",
+            "classname": "ux-icon-sms"
+        },
+        {
             "name": "soa",
             "classname": "ux-icon-soa"
         },
@@ -1243,6 +1299,14 @@
         {
             "name": "social-instagram",
             "classname": "ux-icon-social-instagram"
+        },
+        {
+            "name": "social-instant-message",
+            "classname": "ux-icon-social-instant-message"
+        },
+        {
+            "name": "social-jira",
+            "classname": "ux-icon-social-jira"
         },
         {
             "name": "social-linkedin",
@@ -1313,6 +1377,10 @@
             "classname": "ux-icon-social-youtube"
         },
         {
+            "name": "social-zoom",
+            "classname": "ux-icon-social-zoom"
+        },
+        {
             "name": "sort",
             "classname": "ux-icon-sort"
         },
@@ -1343,6 +1411,10 @@
         {
             "name": "status-information-filled",
             "classname": "ux-icon-status-information-filled"
+        },
+        {
+            "name": "status-information",
+            "classname": "ux-icon-status-information"
         },
         {
             "name": "status-warning-filled",
@@ -1379,6 +1451,10 @@
         {
             "name": "support",
             "classname": "ux-icon-support"
+        },
+        {
+            "name": "symphony",
+            "classname": "ux-icon-symphony"
         },
         {
             "name": "sync",
@@ -1463,6 +1539,10 @@
         {
             "name": "transaction",
             "classname": "ux-icon-transaction"
+        },
+        {
+            "name": "translate",
+            "classname": "ux-icon-translate"
         },
         {
             "name": "trash-filled",
@@ -1603,6 +1683,10 @@
         {
             "name": "vm-maintenance",
             "classname": "ux-icon-vm-maintenance"
+        },
+        {
+            "name": "voltage",
+            "classname": "ux-icon-voltage"
         },
         {
             "name": "volume-filled",

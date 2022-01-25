@@ -2,31 +2,50 @@ import { O, SHIFT, TAB } from '@angular/cdk/keycodes';
 import { Component } from '@angular/core';
 import { async, ComponentFixture, TestBed } from '@angular/core/testing';
 import { FormControl, FormGroup, FormsModule, ReactiveFormsModule } from '@angular/forms';
-import { dispatchKeyboardEvent } from '../../common/testing/dispatch-event';
-import { SelectModule } from './select.module';
 import { By } from '@angular/platform-browser';
+import { dispatchKeyboardEvent } from '../../common/testing/dispatch-event';
+import { InfiniteScrollLoadFunction } from '../../directives/infinite-scroll/index';
 import { SelectComponent } from './select.component';
+import { SelectModule } from './select.module';
 
 @Component({
     selector: 'app-select-test',
     template: `
-        <ux-select (valueChange)="onValueChange()" (inputChange)="onInputChange()" *ngIf="visible" [(input)]="input" [(value)]="value" [options]="options" [multiple]="multiple" [allowNull]="allowNull" [clearButton]="clearButton" [placeholder]="placeholder"></ux-select>
+        <ux-select (valueChange)="onValueChange()"
+                   (inputChange)="onInputChange()"
+                   *ngIf="visible"
+                   [(input)]="input"
+                   [(value)]="value"
+                   [options]="options"
+                   [required]="required"
+                   [multiple]="multiple"
+                   [allowNull]="allowNull"
+                   [clearButton]="clearButton"
+                   [placeholder]="placeholder"
+                   [pageSize]="pageSize"
+                   [readonlyInput]="readonlyInput"
+                   [(dropdownOpen)]="dropdownOpen">
+        </ux-select>
     `
 })
 export class SelectTestComponent {
 
-    onValueChange(): void { }
-
-    onInputChange(): void { }
-
     input: string = '';
     value: string | string[];
-    options: string[] = ['One', 'Two', 'Three'];
+    options: string[] | InfiniteScrollLoadFunction = ['One', 'Two', 'Three'];
     multiple: boolean = false;
+    required: boolean = false;
     allowNull: boolean = false;
     clearButton: boolean = false;
     visible: boolean = true;
     placeholder: string;
+    pageSize: number = 20;
+    dropdownOpen: boolean = false;
+    readonlyInput: boolean = false;
+
+    onValueChange(): void { }
+
+    onInputChange(): void { }
 }
 
 describe('Select Component', () => {
@@ -232,6 +251,159 @@ describe('Select Component', () => {
         fixture.detectChanges();
         expect(component.value).toBe('One');
     });
+
+    it('should disable selected options when multiple = true', () => {
+        component.multiple = true;
+        component.value = ['One'];
+        fixture.detectChanges();
+
+        const typeaheadOptions = nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li');
+        expect(typeaheadOptions.item(0).classList).toContain('disabled');
+        expect(typeaheadOptions.item(1).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(2).classList).not.toContain('disabled');
+    });
+
+    it('should re-enabled options when they are deselected when multiple = true', () => {
+        component.multiple = true;
+        component.value = ['One'];
+        fixture.detectChanges();
+        // remove the selected item and it should be re-enabled
+        component.value = [];
+        fixture.detectChanges();
+
+        const typeaheadOptions = nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li');
+        expect(typeaheadOptions.item(0).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(1).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(2).classList).not.toContain('disabled');
+    });
+
+    it('should not allow a disabled option to be selected when multiple = true', () => {
+        component.multiple = true;
+        component.value = ['One'];
+        fixture.detectChanges();
+
+        let tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
+
+        nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li')
+            .item(0)
+            .click();
+
+        tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
+    });
+
+    it('should disable selected options when multiple = true and pagination is enabled', async () => {
+        enablePagination();
+        component.multiple = true;
+        component.value = ['Option 1'];
+        component.dropdownOpen = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        const typeaheadOptions = nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li');
+
+        expect(typeaheadOptions.item(0).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(1).classList).toContain('disabled');
+        expect(typeaheadOptions.item(2).classList).not.toContain('disabled');
+    });
+
+    it('should re-enable options when they are deselected when multiple = true and pagination is enabled', async () => {
+        enablePagination();
+        component.multiple = true;
+        component.value = ['Option 1'];
+        component.dropdownOpen = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        // remove the selected item and it should be re-enabled
+        component.value = [];
+        fixture.detectChanges();
+
+        const typeaheadOptions = nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li');
+        expect(typeaheadOptions.item(0).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(1).classList).not.toContain('disabled');
+        expect(typeaheadOptions.item(2).classList).not.toContain('disabled');
+    });
+
+    it('should not allow a disabled option to be selected when multiple = true and pagination is enabled', async () => {
+        enablePagination();
+        component.multiple = true;
+        component.value = ['Option 1'];
+        component.dropdownOpen = true;
+        fixture.detectChanges();
+        await fixture.whenStable();
+
+        let tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
+
+        nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-options li')
+            .item(1)
+            .click();
+
+        fixture.detectChanges();
+
+        tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
+    });
+
+    it('should add a required attribute to the multiple select when required is true', () => {
+        component.required = true;
+        component.multiple = true;
+        component.dropdownOpen = true;
+
+        fixture.detectChanges();
+
+        const inputElementEmpty = nativeElement.querySelector<HTMLInputElement>('input.ux-tag-input');
+        const attributeRequired = inputElementEmpty.hasAttribute('required');
+
+        expect(attributeRequired).toBe(true);
+    });
+
+    it('should add a required attribute to the single select when required is true', () => {
+        component.required = true;
+        component.dropdownOpen = true;
+
+        fixture.detectChanges();
+
+        const inputElementEmpty = nativeElement.querySelector<HTMLInputElement>('input.form-control');
+        const attributeRequired = inputElementEmpty.hasAttribute('required');
+
+        expect(attributeRequired).toBe(true);
+    });
+
+    it('should focus on input when icon is clicked', () => {
+        component.readonlyInput = true;
+
+        fixture.detectChanges();
+
+        const inputElement = nativeElement.querySelector<HTMLElement>('input.form-control');
+        const inputIcon = nativeElement.querySelector<HTMLElement>('i.ux-select-icon');
+
+        inputIcon.click();
+
+        expect(document.activeElement).toBe(inputElement);
+    });
+
+    function enablePagination(): void {
+        component.options = function (pageNum: number, pageSize: number): Promise<string[]> {
+            return new Promise<string[]>(resolve => {
+                const items: string[] = [];
+
+                if (pageNum >= 2) {
+                    resolve([]);
+                }
+
+                for (let idx = pageNum * pageSize; idx < ((pageNum + 1) * pageSize); idx++) {
+                    items.push(`Option ${ idx }`);
+                }
+
+                resolve(items);
+            });
+        };
+
+        fixture.detectChanges();
+    }
 
     function getClearButton(isMultiple: boolean = false): HTMLElement | null {
         return nativeElement.querySelector(`.${isMultiple ? 'ux-tag-icon' : 'ux-select-icon'}.ux-icon-close`);
@@ -731,6 +903,34 @@ describe('Select with recent options', () => {
 
         expect(component.recentOptions.length).toBe(1);
         expect(component.recentOptions[0]).toBe('One');
+    });
+
+    it('should disable selected recent options when multiple = true', () => {
+        component.multiple = true;
+        component.value = ['One'];
+        component.recentOptions = ['One', 'Two'];
+        fixture.detectChanges();
+
+        const recentOptionListItems = nativeElement.querySelectorAll('.ux-typeahead-recent-options li');
+        expect(recentOptionListItems.item(0).classList).toContain('disabled');
+        expect(recentOptionListItems.item(1).classList).not.toContain('disabled');
+    });
+
+    it('should not be able to select a recent option that is currently selected when multiple = true', () => {
+        component.multiple = true;
+        component.value = ['One'];
+        component.recentOptions = ['One', 'Two'];
+        fixture.detectChanges();
+
+        let tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
+
+        const recentOptionListItems = nativeElement.querySelectorAll<HTMLElement>('.ux-typeahead-recent-options li');
+        recentOptionListItems.item(0).click();
+        fixture.detectChanges();
+
+        tags = fixture.nativeElement.querySelectorAll('li.ux-tag');
+        expect(tags.length).toBe(1);
     });
 
 });

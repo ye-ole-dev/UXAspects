@@ -1,4 +1,4 @@
-import { Key } from 'protractor';
+import { $, browser, Key } from 'protractor';
 import { imageCompare } from '../../common/image-compare';
 import { numberOfCountries, SelectPage } from './select.po.spec';
 
@@ -398,10 +398,10 @@ describe('Select Tests', () => {
 
         // enable paging
         await page.clickOnCheckbox(page.checkboxPaging);
-        var result;
+        let result;
 
         // use original page size
-        var pageSize = 20;
+        const pageSize = 20;
 
         // confirm number of visible countries increases by 20 each time
         await page.clickOnDropdown(false);
@@ -490,8 +490,8 @@ describe('Select Tests', () => {
 
         // enable paging
         await page.clickOnCheckbox(page.checkboxPaging);
-        var result;
-        var pageSize = 20;
+        let result;
+        const pageSize = 20;
 
         // use filter
         expect(await page.waitForLoadingAfterClickToFinish(false)).toBeTruthy();
@@ -613,7 +613,8 @@ describe('Select Tests', () => {
         await page.checkRecentOptions(true, ['Aland Islands', 'Albania', 'Afghanistan']);
 
         // Recent options list with three entries
-        expect(await imageCompare('select-recent-multi')).toEqual(0);
+        // Restore check when EL-4193 is fixed
+        // expect(await imageCompare('select-recent-multi')).toEqual(0);
     });
 
     it('should handle recent options correctly: recent options filled', async () => {
@@ -630,5 +631,92 @@ describe('Select Tests', () => {
 
         // Recent options list with three entries
         expect(await imageCompare('select-recent-filled')).toEqual(0);
+    });
+
+    it('should allow filtering and selecting an item using the keyboard when multiple = true and paging = true', async () => {
+        await page.clickOnCheckbox(page.checkboxMulti);
+        await page.clickOnCheckbox(page.checkboxPaging);
+
+        await page.clickOnDropdown(true);
+        await page.input.sendKeys('united k');
+
+        expect(await page.confirmDropdownIsExpanded()).toBe(true);
+
+        await page.input.sendKeys(Key.ENTER);
+        expect(await page.confirmDropdownIsExpanded()).toBe(false);
+        expect(await page.getSelectedLocationText()).toBe('[ "United Kingdom" ]');
+    });
+
+    it('should allow quick filtering when using a lower filterDebounceTime value', async () => {
+        await page.toggleClearButton();
+        await page.clickOnIncrementFilterDebounce();
+        await page.getDropdown(false).sendKeys('al', Key.ENTER);
+        expect(await page.getSelectedLocationText()).toBe('"United States"', 'should select incorrect value when debounceTime is 1200');
+
+        await page.clickOnDecrementFilterDebounce();
+        await page.clickOnDecrementFilterDebounce();
+        await page.getClearButton().click();
+        await page.getDropdown(false).sendKeys('al');
+        await page.getDropdown(false).sendKeys(Key.ENTER);
+        expect(await page.getSelectedLocationText()).toBe('"Aland Islands"', 'should select correct value when debounceTime is 0');
+    });
+
+    it('should close the dropdown on external click when autoCloseDropdown = true and multiple = true', async() => {
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'before external click');
+        await page.clickOnCheckbox(page.checkboxMulti);
+        await page.clickOnDropdown(true);
+
+        await browser.actions().click($('body')).perform();
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'after external click');
+    });
+
+    it('should not close the dropdown on external click when autoCloseDropdown = false and multiple = false', async() => {
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'before external click');
+        await page.clickOnCheckbox(page.checkboxAutoCloseDropdown);
+        await page.clickOnDropdown(false);
+
+        await browser.actions().click($('body')).perform();
+        expect(await page.confirmDropdownIsExpanded()).toBe(true, 'after external click');
+    });
+
+    it('should close the dropdown on external click when autoCloseDropdown = true and multiple = false', async() => {
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'before external click');
+        await page.clickOnDropdown(false);
+
+        await browser.actions().click($('body')).perform();
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'after external click');
+    });
+
+    it('should not close the dropdown on external click when autoCloseDropdown = false and multiple = true', async() => {
+        expect(await page.confirmDropdownIsExpanded()).toBe(false, 'before external click');
+        await page.clickOnCheckbox(page.checkboxMulti);
+        await page.clickOnCheckbox(page.checkboxAutoCloseDropdown);
+        await page.clickOnDropdown(true);
+
+        await browser.actions().click($('body')).perform();
+        expect(await page.confirmDropdownIsExpanded()).toBe(true, 'after external click');
+    });
+
+    it('should automatically change the drop direction depending on the available space when using dropDirection=auto', async () => {
+        await page.clickOnDropDirectionAuto();
+        await page.decreaseMaxHeight.click();
+        await page.clickOnDropdown(false);
+        expect(await page.confirmDropdownIsExpanded()).toBe(true);
+        expect(await imageCompare('select-drop-direction-auto-down')).toBe(0, 'should use direction down when space is available');
+
+        await page.increaseMaxHeight.click();
+        await page.clickOnDropdown(false);
+        expect(await page.confirmDropdownIsExpanded()).toBe(true);
+        expect(await imageCompare('select-drop-direction-auto-up')).toBe(0, 'should use direction up when space is not available');
+    });
+
+    it('should close the dropdown menu when opened by the icon after losing focus with readonlyInput activated', async () => {
+        await page.clickOnCheckbox(page.checkboxReadonlyInput);
+
+        await page.clickOnSelectIcon();
+        expect(await page.confirmDropdownIsExpanded()).toBe(true);
+
+        await browser.actions().click($('body')).perform();
+        expect(await page.confirmDropdownIsExpanded()).toBe(false);
     });
 });
